@@ -2,6 +2,18 @@
 
 A backend wallet service built with Go that allows users to deposit money using Paystack, manage wallet balances, view transaction history, and transfer funds to other users.
 
+## 📚 Interactive API Documentation
+
+**Swagger UI available at:** `http://localhost:8080/swagger/index.html`
+
+Complete interactive documentation with:
+- ✅ Try out all endpoints in your browser
+- ✅ View request/response schemas
+- ✅ Test authentication (JWT & API keys)
+- ✅ See example payloads
+
+See **[SWAGGER.md](SWAGGER.md)** for detailed Swagger documentation guide.
+
 ## Prerequisites
 
 - Go 1.21 or higher

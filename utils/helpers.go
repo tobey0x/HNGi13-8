@@ -19,7 +19,6 @@ func GenerateAPIKey() (string, error) {
 
 // GenerateWalletNumber generates a unique 13-digit wallet number
 func GenerateWalletNumber() (string, error) {
-	// Generate a random 13-digit number
 	max := big.NewInt(9999999999999)
 	min := big.NewInt(1000000000000)
 	
@@ -57,7 +56,6 @@ func ParseExpiry(expiry string) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("invalid expiry unit: must be H, D, M, or Y")
 	}
 
-	// Parse the numeric value
 	var count int
 	_, err := fmt.Sscanf(value, "%d", &count)
 	if err != nil {

@@ -1,0 +1,497 @@
+basePath: /
+definitions:
+  handlers.APIKeyResponse:
+    properties:
+      expires_at:
+        example: "2025-12-11T12:00:00Z"
+        type: string
+      id:
+        example: uuid-here
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      is_expired:
+        example: false
+        type: boolean
+      name:
+        example: production-api
+        type: string
+      permissions:
+        example: '["deposit","transfer","read"]'
+        type: string
+    type: object
+  handlers.CreateAPIKeyRequest:
+    properties:
+      expiry:
+        example: 1D
+        type: string
+      name:
+        example: production-api
+        type: string
+      permissions:
+        example:
+        - deposit
+        - transfer
+        - read
+        items:
+          type: string
+        type: array
+    required:
+    - expiry
+    - name
+    - permissions
+    type: object
+  handlers.CreateAPIKeyResponse:
+    properties:
+      api_key:
+        example: sk_live_xxxxx
+        type: string
+      expires_at:
+        example: "2025-12-11T12:00:00Z"
+        type: string
+    type: object
+  handlers.DepositRequest:
+    properties:
+      amount:
+        example: 5000
+        type: integer
+    required:
+    - amount
+    type: object
+  handlers.DepositResponse:
+    properties:
+      authorization_url:
+        example: https://checkout.paystack.com/...
+        type: string
+      reference:
+        example: TXN_1234567890
+        type: string
+    type: object
+  handlers.RolloverAPIKeyRequest:
+    properties:
+      expired_key_id:
+        example: uuid-here
+        type: string
+      expiry:
+        example: 1M
+        type: string
+    required:
+    - expired_key_id
+    - expiry
+    type: object
+  handlers.TransactionResponse:
+    properties:
+      amount:
+        example: 5000
+        type: integer
+      status:
+        example: success
+        type: string
+      type:
+        example: deposit
+        type: string
+    type: object
+  handlers.TransferRequest:
+    properties:
+      amount:
+        example: 3000
+        type: integer
+      wallet_number:
+        example: "1234567890123"
+        type: string
+    required:
+    - amount
+    - wallet_number
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@walletservice.com
+    name: API Support
+  description: Backend wallet service with Paystack integration, Google OAuth, and
+    API key management
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Wallet Service API
+  version: "1.0"
+paths:
+  /auth/google:
+    get:
+      description: Redirects user to Google OAuth consent screen
+      produces:
+      - application/json
+      responses:
+        "307":
+          description: Redirect to Google
+          schema:
+            type: string
+      summary: Initiate Google OAuth login
+      tags:
+      - Authentication
+  /auth/google/callback:
+    get:
+      description: Handles Google OAuth callback, creates user if not exists, and
+        returns JWT token
+      parameters:
+      - description: Authorization code from Google
+        in: query
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "307":
+          description: Redirect to frontend with JWT token
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Google OAuth callback
+      tags:
+      - Authentication
+  /keys/{id}:
+    delete:
+      description: Deactivate an API key by its ID
+      parameters:
+      - description: API Key ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: API key not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Revoke an API key
+      tags:
+      - API Keys
+  /keys/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new API key with specific permissions and expiry (max
+        5 active keys per user)
+      parameters:
+      - description: 'API key details. Expiry: 1H, 1D, 1M, 1Y'
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateAPIKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.CreateAPIKeyResponse'
+        "400":
+          description: Bad request or max keys reached
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new API key
+      tags:
+      - API Keys
+  /keys/list:
+    get:
+      description: Get all API keys for the authenticated user (actual key values
+        are not exposed)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.APIKeyResponse'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all API keys
+      tags:
+      - API Keys
+  /keys/rollover:
+    post:
+      consumes:
+      - application/json
+      description: Create a new API key with the same permissions as an expired key
+      parameters:
+      - description: Expired key ID and new expiry
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RolloverAPIKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.CreateAPIKeyResponse'
+        "400":
+          description: Bad request or key not expired
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: API key not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Rollover an expired API key
+      tags:
+      - API Keys
+  /wallet/balance:
+    get:
+      description: Retrieve the current balance of the authenticated user's wallet
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Balance in kobo
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Wallet not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      - ApiKeyAuth: []
+      summary: Get wallet balance
+      tags:
+      - Wallet
+  /wallet/deposit:
+    post:
+      consumes:
+      - application/json
+      description: Initialize a Paystack transaction for depositing money into wallet
+      parameters:
+      - description: Deposit amount in kobo (100 kobo = ₦1)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.DepositRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.DepositResponse'
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Wallet not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      - ApiKeyAuth: []
+      summary: Initiate wallet deposit
+      tags:
+      - Wallet
+  /wallet/deposit/{reference}/status:
+    get:
+      description: Manually check the status of a deposit transaction by reference
+      parameters:
+      - description: Transaction reference
+        in: path
+        name: reference
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Transaction not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      - ApiKeyAuth: []
+      summary: Get deposit transaction status
+      tags:
+      - Wallet
+  /wallet/paystack/webhook:
+    post:
+      consumes:
+      - application/json
+      description: Receives and processes payment notifications from Paystack (signature
+        verified)
+      parameters:
+      - description: Paystack signature
+        in: header
+        name: x-paystack-signature
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Invalid signature
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Paystack webhook handler
+      tags:
+      - Wallet
+  /wallet/transactions:
+    get:
+      description: Retrieve all transactions for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.TransactionResponse'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      - ApiKeyAuth: []
+      summary: Get transaction history
+      tags:
+      - Wallet
+  /wallet/transfer:
+    post:
+      consumes:
+      - application/json
+      description: Transfer money from authenticated user's wallet to another user's
+        wallet
+      parameters:
+      - description: Transfer details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.TransferRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request or insufficient balance
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Recipient wallet not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      - ApiKeyAuth: []
+      summary: Transfer funds to another wallet
+      tags:
+      - Wallet
+securityDefinitions:
+  ApiKeyAuth:
+    description: API Key for service-to-service authentication
+    in: header
+    name: x-api-key
+    type: apiKey
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

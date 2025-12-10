@@ -32,11 +32,30 @@ func InitGoogleOAuth() {
 	}
 }
 
+// GoogleLogin godoc
+// @Summary Initiate Google OAuth login
+// @Description Returns Google OAuth URL for client-side redirect
+// @Tags Authentication
+// @Produce json
+// @Success 200 {object} map[string]interface{} "OAuth URL"
+// @Router /auth/google [get]
 func GoogleLogin(c *gin.Context) {
 	url := googleOauthConfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
-	c.Redirect(http.StatusTemporaryRedirect, url)
+	c.JSON(http.StatusOK, gin.H{
+		"url": url,
+	})
 }
 
+// GoogleCallback godoc
+// @Summary Google OAuth callback
+// @Description Handles Google OAuth callback, creates user if not exists, and returns JWT token
+// @Tags Authentication
+// @Produce json
+// @Param code query string true "Authorization code from Google"
+// @Success 307 {string} string "Redirect to frontend with JWT token"
+// @Failure 400 {object} map[string]interface{} "Bad request"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /auth/google/callback [get]
 func GoogleCallback(c *gin.Context) {
 	code := c.Query("code")
 	if code == "" {
@@ -44,7 +63,6 @@ func GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Exchange code for token
 	token, err := googleOauthConfig.Exchange(context.Background(), code)
 	if err != nil {
 		log.Println("Failed to exchange token:", err)
@@ -52,7 +70,6 @@ func GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Get user info from Google
 	client := googleOauthConfig.Client(context.Background(), token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 	if err != nil {
@@ -75,12 +92,10 @@ func GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Find or create user
 	var user models.User
 	result := database.DB.Where("google_id = ?", googleUser.ID).First(&user)
 	
 	if result.Error != nil {
-		// Create new user
 		user = models.User{
 			Email:    googleUser.Email,
 			Name:     googleUser.Name,
@@ -92,7 +107,6 @@ func GoogleCallback(c *gin.Context) {
 			return
 		}
 
-		// Create wallet for new user
 		walletNumber, err := utils.GenerateWalletNumber()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate wallet number"})
@@ -111,14 +125,12 @@ func GoogleCallback(c *gin.Context) {
 		}
 	}
 
-	// Generate JWT
 	jwtToken, err := utils.GenerateJWT(user.ID, user.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
 
-	// Redirect to frontend with token
 	redirectURL := fmt.Sprintf("%s/auth/callback?token=%s", config.AppConfig.FrontendURL, jwtToken)
 	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }

@@ -76,7 +76,6 @@ type APIKey struct {
 	User User `gorm:"foreignKey:UserID" json:"user,omitempty"`
 }
 
-// IsExpired checks if the API key has expired
 func (a *APIKey) IsExpired() bool {
 	return time.Now().After(a.ExpiresAt)
 }

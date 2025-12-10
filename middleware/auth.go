@@ -15,7 +15,6 @@ import (
 // AuthMiddleware handles both JWT and API key authentication
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Check for JWT token first
 		authHeader := c.GetHeader("Authorization")
 		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
 			token := strings.TrimPrefix(authHeader, "Bearer ")
@@ -26,7 +25,6 @@ func AuthMiddleware() gin.HandlerFunc {
 				return
 			}
 
-			// Set user context
 			c.Set("user_id", claims.UserID)
 			c.Set("email", claims.Email)
 			c.Set("auth_type", "jwt")
@@ -34,7 +32,6 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Check for API key
 		apiKey := c.GetHeader("x-api-key")
 		if apiKey != "" {
 			var key models.APIKey
@@ -44,14 +41,12 @@ func AuthMiddleware() gin.HandlerFunc {
 				return
 			}
 
-			// Check if expired
 			if key.IsExpired() {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "API key has expired"})
 				c.Abort()
 				return
 			}
 
-			// Parse permissions
 			var permissions []string
 			if err := json.Unmarshal([]byte(key.Permissions), &permissions); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse API key permissions"})
@@ -59,7 +54,6 @@ func AuthMiddleware() gin.HandlerFunc {
 				return
 			}
 
-			// Set context
 			c.Set("user_id", key.UserID)
 			c.Set("auth_type", "api_key")
 			c.Set("api_key_id", key.ID)
@@ -83,13 +77,11 @@ func RequirePermission(permission string) gin.HandlerFunc {
 			return
 		}
 
-		// JWT users have all permissions
 		if authType == "jwt" {
 			c.Next()
 			return
 		}
 
-		// API key users need specific permissions
 		if authType == "api_key" {
 			permissions, exists := c.Get("permissions")
 			if !exists {
@@ -105,7 +97,6 @@ func RequirePermission(permission string) gin.HandlerFunc {
 				return
 			}
 
-			// Check if permission exists
 			hasPermission := false
 			for _, p := range permList {
 				if p == permission {
@@ -150,11 +141,9 @@ func RateLimitByAPIKey() gin.HandlerFunc {
 
 		if data, exists := cache[keyID]; exists {
 			if now.After(data.resetTime) {
-				// Reset counter
 				cache[keyID] = &rateLimitData{count: 1, resetTime: now.Add(time.Minute)}
 			} else {
-				// Check limit
-				if data.count >= 100 { // 100 requests per minute
+				if data.count >= 100 {
 					c.JSON(http.StatusTooManyRequests, gin.H{"error": "Rate limit exceeded"})
 					c.Abort()
 					return
