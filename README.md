@@ -116,10 +116,14 @@ Authorization: Bearer <jwt_token>
 ### Wallet Operations
 
 #### Deposit Money (Initialize Paystack Transaction)
-```
+
+```bash
 POST /wallet/deposit
+
+# Option 1: Use JWT
 Authorization: Bearer <jwt_token>
-OR
+
+# Option 2: Use API Key (choose one, not both)
 x-api-key: <api_key>
 
 {
@@ -155,10 +159,14 @@ x-paystack-signature: <signature>
 This endpoint verifies the Paystack signature and credits the wallet.
 
 #### Check Deposit Status
-```
+
+```bash
 GET /wallet/deposit/:reference/status
+
+# Option 1: Use JWT
 Authorization: Bearer <jwt_token>
-OR
+
+# Option 2: Use API Key (choose one, not both)
 x-api-key: <api_key>
 ```
 
@@ -172,11 +180,15 @@ x-api-key: <api_key>
 ```
 
 #### Get Wallet Balance
-```
+
+```bash
 GET /wallet/balance
+
+# Option 1: Use JWT (full access)
 Authorization: Bearer <jwt_token>
-OR
-x-api-key: <api_key> (requires "read" permission)
+
+# Option 2: Use API Key with "read" permission (choose one, not both)
+x-api-key: <api_key>
 ```
 
 **Response:**
@@ -187,11 +199,15 @@ x-api-key: <api_key> (requires "read" permission)
 ```
 
 #### Get Transaction History
-```
+
+```bash
 GET /wallet/transactions
+
+# Option 1: Use JWT (full access)
 Authorization: Bearer <jwt_token>
-OR
-x-api-key: <api_key> (requires "read" permission)
+
+# Option 2: Use API Key with "read" permission (choose one, not both)
+x-api-key: <api_key>
 ```
 
 **Response:**
@@ -211,11 +227,15 @@ x-api-key: <api_key> (requires "read" permission)
 ```
 
 #### Transfer Funds
-```
+
+```bash
 POST /wallet/transfer
+
+# Option 1: Use JWT (full access)
 Authorization: Bearer <jwt_token>
-OR
-x-api-key: <api_key> (requires "transfer" permission)
+
+# Option 2: Use API Key with "transfer" permission (choose one, not both)
+x-api-key: <api_key>
 
 {
   "wallet_number": "4566678954356",
@@ -235,23 +255,31 @@ x-api-key: <api_key> (requires "transfer" permission)
 
 ## Authentication Methods
 
+The API supports **two authentication methods** - you only need to provide **one** (not both):
+
 ### 1. JWT Token (Full Access)
-```
+```bash
 Authorization: Bearer <jwt_token>
 ```
-- Obtained after Google sign-in
-- Has full access to all wallet operations
-- No permission restrictions
+- ✅ Obtained after Google sign-in
+- ✅ Has **full access** to all wallet operations
+- ✅ No permission restrictions
+- ✅ Used for end-user authentication
+
+**Priority:** If both JWT and API key are provided, **JWT takes precedence** and API key is ignored.
 
 ### 2. API Key (Permission-Based Access)
-```
+```bash
 x-api-key: sk_live_xxxxx
 ```
-- Created via `/keys/create` endpoint
-- Requires specific permissions: `deposit`, `transfer`, `read`
-- Maximum 5 active keys per user
-- Can expire and be rolled over
-- Can be revoked
+- ✅ Created via `/keys/create` endpoint (requires JWT)
+- ✅ Requires specific permissions: `deposit`, `transfer`, `read`
+- ✅ Maximum 5 active keys per user
+- ✅ Can expire and be rolled over
+- ✅ Can be revoked
+- ✅ Used for service-to-service authentication (backend services, automated scripts)
+
+**Note:** API key users are restricted to their assigned permissions only.
 
 ---
 

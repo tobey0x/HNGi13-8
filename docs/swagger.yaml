@@ -120,12 +120,11 @@ info:
 paths:
   /auth/google:
     get:
-      description: Redirects user to Google OAuth consent screen
-      produces:
-      - application/json
+      description: Redirects directly to Google sign-in page. Simply visit https://acclivous-keenly-nicholas.ngrok-free.dev/auth/google
+        in your browser.
       responses:
         "307":
-          description: Redirect to Google
+          description: Redirect to Google OAuth
           schema:
             type: string
       summary: Initiate Google OAuth login
@@ -134,7 +133,7 @@ paths:
   /auth/google/callback:
     get:
       description: Handles Google OAuth callback, creates user if not exists, and
-        returns JWT token
+        returns JWT token with user details
       parameters:
       - description: Authorization code from Google
         in: query
@@ -144,10 +143,11 @@ paths:
       produces:
       - application/json
       responses:
-        "307":
-          description: Redirect to frontend with JWT token
+        "200":
+          description: JWT token and user details
           schema:
-            type: string
+            additionalProperties: true
+            type: object
         "400":
           description: Bad request
           schema:

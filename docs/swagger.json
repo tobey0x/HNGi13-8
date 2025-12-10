@@ -19,17 +19,14 @@
     "paths": {
         "/auth/google": {
             "get": {
-                "description": "Redirects user to Google OAuth consent screen",
-                "produces": [
-                    "application/json"
-                ],
+                "description": "Redirects directly to Google sign-in page. Simply visit https://acclivous-keenly-nicholas.ngrok-free.dev/auth/google in your browser.",
                 "tags": [
                     "Authentication"
                 ],
                 "summary": "Initiate Google OAuth login",
                 "responses": {
                     "307": {
-                        "description": "Redirect to Google",
+                        "description": "Redirect to Google OAuth",
                         "schema": {
                             "type": "string"
                         }
@@ -39,7 +36,7 @@
         },
         "/auth/google/callback": {
             "get": {
-                "description": "Handles Google OAuth callback, creates user if not exists, and returns JWT token",
+                "description": "Handles Google OAuth callback, creates user if not exists, and returns JWT token with user details",
                 "produces": [
                     "application/json"
                 ],
@@ -57,10 +54,11 @@
                     }
                 ],
                 "responses": {
-                    "307": {
-                        "description": "Redirect to frontend with JWT token",
+                    "200": {
+                        "description": "JWT token and user details",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "400": {

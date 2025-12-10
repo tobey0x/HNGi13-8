@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -34,25 +33,26 @@ func InitGoogleOAuth() {
 
 // GoogleLogin godoc
 // @Summary Initiate Google OAuth login
-// @Description Returns Google OAuth URL for client-side redirect
+// @Description Returns Google OAuth URL. NOTE: Do not use Swagger's "Execute" button for this endpoint. Instead, visit this URL directly in your browser: https://acclivous-keenly-nicholas.ngrok-free.dev/auth/google. You will receive a JSON response with the OAuth URL. Open that URL to complete Google sign-in. Or use the test UI at: https://acclivous-keenly-nicholas.ngrok-free.dev/public/test.html
 // @Tags Authentication
 // @Produce json
-// @Success 200 {object} map[string]interface{} "OAuth URL"
+// @Success 200 {object} map[string]interface{} "OAuth URL - Copy this URL and open in browser"
 // @Router /auth/google [get]
 func GoogleLogin(c *gin.Context) {
 	url := googleOauthConfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
 	c.JSON(http.StatusOK, gin.H{
 		"url": url,
+		"instructions": "Open the URL above in your browser to sign in with Google",
 	})
 }
 
 // GoogleCallback godoc
 // @Summary Google OAuth callback
-// @Description Handles Google OAuth callback, creates user if not exists, and returns JWT token
+// @Description Handles Google OAuth callback, creates user if not exists, and returns JWT token with user details
 // @Tags Authentication
 // @Produce json
 // @Param code query string true "Authorization code from Google"
-// @Success 307 {string} string "Redirect to frontend with JWT token"
+// @Success 200 {object} map[string]interface{} "JWT token and user details"
 // @Failure 400 {object} map[string]interface{} "Bad request"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/google/callback [get]
@@ -131,6 +131,16 @@ func GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	redirectURL := fmt.Sprintf("%s/auth/callback?token=%s", config.AppConfig.FrontendURL, jwtToken)
-	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+	var wallet models.Wallet
+	database.DB.Where("user_id = ?", user.ID).First(&wallet)
+
+	c.JSON(http.StatusOK, gin.H{
+		"token": jwtToken,
+		"user": gin.H{
+			"id":            user.ID,
+			"email":         user.Email,
+			"name":          user.Name,
+			"wallet_number": wallet.WalletNumber,
+		},
+	})
 }
