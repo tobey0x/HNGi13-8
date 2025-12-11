@@ -213,6 +213,11 @@ paths:
       description: Create a new API key with specific permissions and expiry (max
         5 active keys per user)
       parameters:
+      - description: Idempotency key to prevent duplicate key creation (optional but
+          recommended)
+        in: header
+        name: X-Idempotency-Key
+        type: string
       - description: 'API key details. Expiry: 1H, 1D, 1M, 1Y'
         in: body
         name: request
@@ -461,6 +466,11 @@ paths:
       description: Transfer money from authenticated user's wallet to another user's
         wallet
       parameters:
+      - description: Idempotency key to prevent duplicate transfers (optional but
+          recommended)
+        in: header
+        name: X-Idempotency-Key
+        type: string
       - description: Transfer details
         in: body
         name: request

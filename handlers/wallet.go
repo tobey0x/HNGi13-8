@@ -291,6 +291,7 @@ type TransferRequest struct {
 // @Tags Wallet
 // @Accept json
 // @Produce json
+// @Param X-Idempotency-Key header string false "Idempotency key to prevent duplicate transfers (optional but recommended)"
 // @Param request body TransferRequest true "Transfer details"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{} "Bad request or insufficient balance"

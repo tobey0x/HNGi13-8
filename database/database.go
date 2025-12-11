@@ -32,6 +32,7 @@ func Migrate() {
 		&models.Wallet{},
 		&models.Transaction{},
 		&models.APIKey{},
+		&models.IdempotencyKey{},
 	)
 	
 	if err != nil {

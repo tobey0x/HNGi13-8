@@ -74,7 +74,10 @@ func main() {
 	keys := router.Group("/keys")
 	keys.Use(middleware.AuthMiddleware())
 	{
-		keys.POST("/create", handlers.CreateAPIKey)
+		keys.POST("/create",
+			middleware.IdempotencyMiddleware(),
+			handlers.CreateAPIKey,
+		)
 		keys.POST("/rollover", handlers.RolloverAPIKey)
 		keys.GET("/list", handlers.ListAPIKeys)
 		keys.DELETE("/:id", handlers.RevokeAPIKey)
@@ -110,6 +113,7 @@ func main() {
 		wallet.POST("/transfer",
 			middleware.AuthMiddleware(),
 			middleware.RequirePermission("transfer"),
+			middleware.IdempotencyMiddleware(),
 			handlers.TransferFunds,
 		)
 	}

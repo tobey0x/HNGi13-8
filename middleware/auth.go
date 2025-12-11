@@ -39,8 +39,11 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		apiKey := c.GetHeader("x-api-key")
 		if apiKey != "" {
+			// Hash the incoming key to compare with stored hash
+			hashedKey := utils.HashAPIKey(apiKey)
+			
 			var key models.APIKey
-			if err := database.DB.Where("key = ? AND is_active = ?", apiKey, true).First(&key).Error; err != nil {
+			if err := database.DB.Where("key = ? AND is_active = ?", hashedKey, true).First(&key).Error; err != nil {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid API key"})
 				c.Abort()
 				return

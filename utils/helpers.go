@@ -2,7 +2,9 @@ package utils
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"time"
@@ -68,4 +70,10 @@ func ParseExpiry(expiry string) (time.Time, error) {
 // GenerateReference generates a unique transaction reference
 func GenerateReference() string {
 	return fmt.Sprintf("TXN_%d", time.Now().UnixNano())
+}
+
+// HashAPIKey generates a SHA-256 hash of an API key for secure storage
+func HashAPIKey(key string) string {
+	hash := sha256.Sum256([]byte(key))
+	return hex.EncodeToString(hash[:])
 }

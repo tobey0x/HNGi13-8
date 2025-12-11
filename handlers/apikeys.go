@@ -32,6 +32,7 @@ type RolloverAPIKeyRequest struct {
 // @Tags API Keys
 // @Accept json
 // @Produce json
+// @Param X-Idempotency-Key header string false "Idempotency key to prevent duplicate key creation (optional but recommended)"
 // @Param request body CreateAPIKeyRequest true "API key details. Expiry: 1H, 1D, 1M, 1Y"
 // @Success 201 {object} CreateAPIKeyResponse
 // @Failure 400 {object} map[string]interface{} "Bad request or max keys reached"
@@ -82,12 +83,15 @@ func CreateAPIKey(c *gin.Context) {
 		return
 	}
 
+	// Hash the key before storing (security best practice)
+	hashedKey := utils.HashAPIKey(keyValue)
+
 	permissionsJSON, _ := json.Marshal(req.Permissions)
 
 	apiKey := models.APIKey{
 		UserID:      userID.(string),
 		Name:        req.Name,
-		Key:         keyValue,
+		Key:         hashedKey, // Store hashed version only
 		Permissions: string(permissionsJSON),
 		ExpiresAt:   expiresAt,
 		IsActive:    true,
@@ -98,9 +102,11 @@ func CreateAPIKey(c *gin.Context) {
 		return
 	}
 
+	// Return the plain key only once - user must save it
 	c.JSON(http.StatusCreated, gin.H{
-		"api_key":    keyValue,
+		"api_key":    keyValue, // Plain text returned only on creation
 		"expires_at": expiresAt,
+		"message":    "Save this key securely. It will not be shown again.",
 	})
 }
 
@@ -159,10 +165,13 @@ func RolloverAPIKey(c *gin.Context) {
 		return
 	}
 
+	// Hash the key before storing
+	hashedKey := utils.HashAPIKey(keyValue)
+
 	newKey := models.APIKey{
 		UserID:      userID.(string),
 		Name:        expiredKey.Name,
-		Key:         keyValue,
+		Key:         hashedKey, // Store hashed version only
 		Permissions: expiredKey.Permissions,
 		ExpiresAt:   expiresAt,
 		IsActive:    true,
@@ -174,8 +183,9 @@ func RolloverAPIKey(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"api_key":    keyValue,
+		"api_key":    keyValue, // Plain text returned only on creation
 		"expires_at": expiresAt,
+		"message":    "Save this key securely. It will not be shown again.",
 	})
 }
 

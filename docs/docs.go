@@ -122,6 +122,12 @@ const docTemplate = `{
                 "summary": "Create a new API key",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Idempotency key to prevent duplicate key creation (optional but recommended)",
+                        "name": "X-Idempotency-Key",
+                        "in": "header"
+                    },
+                    {
                         "description": "API key details. Expiry: 1H, 1D, 1M, 1Y",
                         "name": "request",
                         "in": "body",
@@ -557,6 +563,12 @@ const docTemplate = `{
                 ],
                 "summary": "Transfer funds to another wallet",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Idempotency key to prevent duplicate transfers (optional but recommended)",
+                        "name": "X-Idempotency-Key",
+                        "in": "header"
+                    },
                     {
                         "description": "Transfer details",
                         "name": "request",

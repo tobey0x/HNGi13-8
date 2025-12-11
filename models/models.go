@@ -65,7 +65,7 @@ type APIKey struct {
 	ID          string    `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
 	UserID      string    `gorm:"not null;index" json:"user_id"`
 	Name        string    `gorm:"not null" json:"name"`
-	Key         string    `gorm:"uniqueIndex;not null" json:"key"`
+	Key         string    `gorm:"uniqueIndex;not null" json:"key"` // Stored as SHA-256 hash for security
 	Permissions string    `gorm:"type:jsonb;not null" json:"permissions"` // Stored as JSON array
 	ExpiresAt   time.Time `gorm:"not null" json:"expires_at"`
 	IsActive    bool      `gorm:"default:true" json:"is_active"`
@@ -78,4 +78,20 @@ type APIKey struct {
 
 func (a *APIKey) IsExpired() bool {
 	return time.Now().After(a.ExpiresAt)
+}
+
+type IdempotencyKey struct {
+	ID           string    `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
+	Key          string    `gorm:"uniqueIndex;not null" json:"key"`
+	UserID       string    `gorm:"not null;index" json:"user_id"`
+	RequestPath  string    `gorm:"not null" json:"request_path"`
+	RequestBody  string    `gorm:"type:text" json:"request_body"`
+	ResponseCode int       `json:"response_code"`
+	ResponseBody string    `gorm:"type:text" json:"response_body"`
+	ExpiresAt    time.Time `gorm:"not null;index" json:"expires_at"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+func (i *IdempotencyKey) IsExpired() bool {
+	return time.Now().After(i.ExpiresAt)
 }
