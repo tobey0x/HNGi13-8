@@ -16,11 +16,16 @@ import (
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+		if authHeader != "" {
+			// Handle both "Bearer token" and just "token" formats
 			token := strings.TrimPrefix(authHeader, "Bearer ")
+			token = strings.TrimSpace(token)
 			claims, err := utils.ValidateJWT(token)
 			if err != nil {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"error": "Invalid or expired token",
+					"details": err.Error(),
+				})
 				c.Abort()
 				return
 			}

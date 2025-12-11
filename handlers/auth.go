@@ -33,26 +33,38 @@ func InitGoogleOAuth() {
 
 // GoogleLogin godoc
 // @Summary Initiate Google OAuth login
-// @Description Returns Google OAuth URL. NOTE: Do not use Swagger's "Execute" button for this endpoint. Instead, visit this URL directly in your browser: https://acclivous-keenly-nicholas.ngrok-free.dev/auth/google. You will receive a JSON response with the OAuth URL. Open that URL to complete Google sign-in. Or use the test UI at: https://acclivous-keenly-nicholas.ngrok-free.dev/public/test.html
+// @Description Returns Google OAuth URL. For normal flow: open URL and sign in, you'll get token automatically. For testing in Swagger: add debug=true parameter to see the code first.
 // @Tags Authentication
 // @Produce json
-// @Success 200 {object} map[string]interface{} "OAuth URL - Copy this URL and open in browser"
+// @Param debug query boolean false "Set to true to get authorization code for manual testing"
+// @Success 200 {object} map[string]interface{} "Google OAuth URL"
 // @Router /auth/google [get]
 func GoogleLogin(c *gin.Context) {
 	url := googleOauthConfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
+	
+	debugMode := c.Query("debug") == "true"
+	
+	instructions := "Open the authorization_url in your browser to sign in. You'll be automatically authenticated and receive a JWT token."
+	if debugMode {
+		instructions = "1. Open the authorization_url in your browser. 2. Sign in with Google. 3. You'll see a JSON response with a 'code' field. 4. Copy that code and use it with GET /auth/google/callback?code=YOUR_CODE to get your token."
+		url = url + "&redirect_uri=" + config.AppConfig.GoogleCallbackURL + "?debug=true"
+	}
+	
 	c.JSON(http.StatusOK, gin.H{
-		"url": url,
-		"instructions": "Open the URL above in your browser to sign in with Google",
+		"authorization_url": url,
+		"debug_mode": debugMode,
+		"instructions": instructions,
 	})
 }
 
 // GoogleCallback godoc
 // @Summary Google OAuth callback
-// @Description Handles Google OAuth callback, creates user if not exists, and returns JWT token with user details
+// @Description This is automatically called by Google after sign-in. Add '?debug=true' to see the code without processing: /auth/google/callback?code=...&debug=true
 // @Tags Authentication
 // @Produce json
 // @Param code query string true "Authorization code from Google"
-// @Success 200 {object} map[string]interface{} "JWT token and user details"
+// @Param debug query boolean false "Set to true to return code without processing"
+// @Success 200 {object} map[string]interface{} "JWT token and user details (or code if debug=true)"
 // @Failure 400 {object} map[string]interface{} "Bad request"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/google/callback [get]
@@ -60,6 +72,14 @@ func GoogleCallback(c *gin.Context) {
 	code := c.Query("code")
 	if code == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Code not provided"})
+		return
+	}
+
+	if c.Query("debug") == "true" {
+		c.JSON(http.StatusOK, gin.H{
+			"code": code,
+			"message": "Use this code with GET /auth/google/callback?code=YOUR_CODE (without debug parameter) to complete authentication",
+		})
 		return
 	}
 

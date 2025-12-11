@@ -120,31 +120,44 @@ info:
 paths:
   /auth/google:
     get:
-      description: Redirects directly to Google sign-in page. Simply visit https://acclivous-keenly-nicholas.ngrok-free.dev/auth/google
-        in your browser.
+      description: 'Returns Google OAuth URL. For normal flow: open URL and sign in,
+        you''ll get token automatically. For testing in Swagger: add debug=true parameter
+        to see the code first.'
+      parameters:
+      - description: Set to true to get authorization code for manual testing
+        in: query
+        name: debug
+        type: boolean
+      produces:
+      - application/json
       responses:
-        "307":
-          description: Redirect to Google OAuth
+        "200":
+          description: Google OAuth URL
           schema:
-            type: string
+            additionalProperties: true
+            type: object
       summary: Initiate Google OAuth login
       tags:
       - Authentication
   /auth/google/callback:
     get:
-      description: Handles Google OAuth callback, creates user if not exists, and
-        returns JWT token with user details
+      description: 'This is automatically called by Google after sign-in. Add ''?debug=true''
+        to see the code without processing: /auth/google/callback?code=...&debug=true'
       parameters:
       - description: Authorization code from Google
         in: query
         name: code
         required: true
         type: string
+      - description: Set to true to return code without processing
+        in: query
+        name: debug
+        type: boolean
       produces:
       - application/json
       responses:
         "200":
-          description: JWT token and user details
+          description: JWT token and user details (or code if debug=true)
           schema:
             additionalProperties: true
             type: object
@@ -490,7 +503,7 @@ securityDefinitions:
     name: x-api-key
     type: apiKey
   BearerAuth:
-    description: Type "Bearer" followed by a space and JWT token.
+    description: Type "Bearer" followed by a space and JWT token
     in: header
     name: Authorization
     type: apiKey

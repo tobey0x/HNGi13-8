@@ -71,7 +71,11 @@ func InitiateDeposit(c *gin.Context) {
 	}
 
 	if err := database.DB.Create(&transaction).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create transaction"})
+		log.Println("Failed to create transaction:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to create transaction",
+			"details": err.Error(),
+		})
 		return
 	}
 

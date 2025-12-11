@@ -54,7 +54,7 @@ type Transaction struct {
 	Reference        string            `gorm:"uniqueIndex" json:"reference"`
 	RecipientWalletID *string          `json:"recipient_wallet_id,omitempty"`
 	SenderWalletID    *string          `json:"sender_wallet_id,omitempty"`
-	Metadata         string            `gorm:"type:jsonb" json:"metadata,omitempty"`
+	Metadata         *string           `gorm:"type:jsonb" json:"metadata,omitempty"`
 	CreatedAt        time.Time         `json:"created_at"`
 	UpdatedAt        time.Time         `json:"updated_at"`
 

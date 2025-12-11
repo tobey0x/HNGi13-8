@@ -25,16 +25,28 @@ const docTemplate = `{
     "paths": {
         "/auth/google": {
             "get": {
-                "description": "Redirects directly to Google sign-in page. Simply visit https://acclivous-keenly-nicholas.ngrok-free.dev/auth/google in your browser.",
+                "description": "Returns Google OAuth URL. For normal flow: open URL and sign in, you'll get token automatically. For testing in Swagger: add debug=true parameter to see the code first.",
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "Authentication"
                 ],
                 "summary": "Initiate Google OAuth login",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Set to true to get authorization code for manual testing",
+                        "name": "debug",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
-                    "307": {
-                        "description": "Redirect to Google OAuth",
+                    "200": {
+                        "description": "Google OAuth URL",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -42,7 +54,7 @@ const docTemplate = `{
         },
         "/auth/google/callback": {
             "get": {
-                "description": "Handles Google OAuth callback, creates user if not exists, and returns JWT token with user details",
+                "description": "This is automatically called by Google after sign-in. Add '?debug=true' to see the code without processing: /auth/google/callback?code=...\u0026debug=true",
                 "produces": [
                     "application/json"
                 ],
@@ -57,11 +69,17 @@ const docTemplate = `{
                         "name": "code",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Set to true to return code without processing",
+                        "name": "debug",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "JWT token and user details",
+                        "description": "JWT token and user details (or code if debug=true)",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -739,7 +757,7 @@ const docTemplate = `{
             "in": "header"
         },
         "BearerAuth": {
-            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "description": "Type \"Bearer\" followed by a space and JWT token",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
